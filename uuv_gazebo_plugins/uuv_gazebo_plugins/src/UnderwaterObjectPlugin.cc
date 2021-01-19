@@ -206,8 +206,39 @@ void UnderwaterObjectPlugin::Update(const common::UpdateInfo &_info)
     angularAccel = link->GetRelativeAngularAccel().GetLength();
 #endif
 
+    /* Debug interface */
+    ignition::math::Vector3d lin_acc, ang_acc;
+#if GAZEBO_MAJOR_VERSION >= 8
+    lin_acc = link->RelativeLinearAccel();
+    ang_acc = link->RelativeAngularAccel();
+#else
+    lin_acc = link->GetRelativeLinearAccel();
+    ang_acc = link->GetRelativeAngularAccel();
+#endif
+
+    ignition::math::Vector3d link_force, link_torque;
+#if GAZEBO_MAJOR_VERSION >= 8
+    link_force = link->RelativeForce();
+    link_torque = link->RelativeTorque();
+#else
+    link_force = link->GetRelativeForce();
+    link_torque = link->GetRelativeTorque();
+#endif
+    /* Test interface  */ 
+    if(std::isnan(linearAccel)){
+        printf("Lin acc of %s: %f, %f, %f\n", link->GetName().c_str(), lin_acc[0], lin_acc[1], lin_acc[2]);
+        printf("Force of %s: %f, %f, %f\n", link->GetName().c_str(), link_force[0], link_force[1], link_force[2]);
+        printf("Torque of %s: %f, %f, %f\n", link->GetName().c_str(), link_torque[0], link_torque[1], link_torque[2]);
+    }
+
+    if(std::isnan(angularAccel)){
+        printf("Ang acc of %s: %f, %f, %f\n", link->GetName().c_str(), ang_acc[0], ang_acc[1], ang_acc[2]);
+        printf("Force of %s: %f, %f, %f\n", link->GetName().c_str(), link_force[0], link_force[1], link_force[2]);
+        printf("Torque of %s: %f, %f, %f\n", link->GetName().c_str(), link_torque[0], link_torque[1], link_torque[2]);
+    }
+
     GZ_ASSERT(!std::isnan(linearAccel) && !std::isnan(angularAccel),
-      "Linear or angular accelerations are invalid.");
+     "Linear or angular accelerations are invalid.");
 
     hydro->ApplyHydrodynamicForces(time, this->flowVelocity);
     this->PublishRestoringForce(link);

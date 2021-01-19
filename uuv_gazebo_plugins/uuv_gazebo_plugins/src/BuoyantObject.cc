@@ -177,6 +177,10 @@ void BuoyantObject::ApplyBuoyancyForce()
 
   this->GetBuoyancyForce(pose, buoyancyForce, buoyancyTorque);
 
+  /* Test interface */
+  // printf("Link: %s Buoyancy force: %f %f %f torque: %f %f %f\n", this->link->GetName().c_str(), 
+  //       buoyancyForce.X(), buoyancyForce.Y(), buoyancyForce.Z(), buoyancyTorque.X(), buoyancyTorque.Y(), buoyancyTorque.Z());
+
   GZ_ASSERT(!std::isnan(buoyancyForce.Length()),
     "Buoyancy force is invalid");
   GZ_ASSERT(!std::isnan(buoyancyTorque.Length()),

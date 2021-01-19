@@ -411,10 +411,11 @@ void HMFossen::ApplyHydrodynamicForces(
 
   // Update damping matrix
   this->ComputeDampingMatrix(velRel, this->D);
+  // this->ComputeLinForwardSpeedDampingMatrix(velRel, this->D);
 
   // Filter acceleration (see issue explanation above)
-  // this->ComputeAcc(velRel, _time, 0.3);
-  this->ComputeAccNoFilter(velRel, _time);
+  this->ComputeAcc(velRel, _time, 0.3);
+  // this->ComputeAccNoFilter(velRel, _time);
 
   // We can now compute the additional forces/torques due to thisdynamic
   // effects based on Eq. 8.136 on p.222 of Fossen: Handbook of Marine Craft ...
@@ -432,7 +433,18 @@ void HMFossen::ApplyHydrodynamicForces(
   // All additional (compared to standard rigid body) Fossen terms combined.
   Eigen::Vector6d tau = damping + added + cor;
 
-  GZ_ASSERT(!std::isnan(tau.norm()), "Hydrodynamic forces vector is nan");
+  // std::string msg = this->link->GetModel()->GetName() + ": Hydrodynamic forces vector is nan";
+  // GZ_ASSERT(!std::isnan(tau.norm()), msg.c_str());
+
+  /* Test interface */
+  printf("Force of %s: %f, %f, %f\n", this->link->GetName().c_str(), tau.head(0), tau.head(1), tau.head(2));
+  printf("Torque of %s: %f, %f, %f\n", this->link->GetName().c_str(), tau.head(3), tau.head(4), tau.head(5));
+
+  if(!std::isnan(tau.norm())){
+      printf("force norm of %s: %f\n", this->link->GetName().c_str(), tau.norm());
+  }
+  
+  GZ_ASSERT(!std::isnan(tau.norm()), ": Hydrodynamic forces vector is nan");
 
   if (!std::isnan(tau.norm()))
   {
@@ -495,12 +507,19 @@ void HMFossen::ComputeDampingMatrix(const Eigen::Vector6d& _vel,
       this->offsetLinForwardSpeedDamping * Eigen::Matrix6d::Identity());
 
   // Nonlinear damping matrix is considered as a diagonal matrix
-  for (int i = 0; i < 6; i++)
-  {
-    _D(i, i) += -1 *
-      (this->DNonLin(i, i) + this->offsetNonLinDamping) *
-      std::fabs(_vel[i]);
+  // for (int i = 0; i < 6; i++)
+  // {
+  //   _D(i, i) += -1 *
+  //     (this->DNonLin(i, i) + this->offsetNonLinDamping) *
+  //     std::fabs(_vel[i]);
+  // }
+
+  for (int i = 0; i < 6; i++){
+      for(int j = 0; j < 6; j++){
+          _D(i, j) += -1 * (this->DNonLin(i, j) + this->offsetNonLinDamping) * std::fabs(_vel[j]);
+      }
   }
+
   _D *= this->scalingDamping;
 }
 
@@ -526,6 +545,15 @@ void HMFossen::ComputeQuadDampingMatrix(const Eigen::Vector6d& _vel,
       (this->DNonLin(i, j) + this->offsetNonLinDamping) *
       _vel[0];
   }
+  _D *= this->scalingDamping;
+}
+
+/////////////////////////////////////////////////
+void HMFossen::ComputeLinForwardSpeedDampingMatrix(const Eigen::Vector6d& _vel,
+                                    Eigen::Matrix6d &_D) const
+{
+  _D.setZero();
+  _D = -1 * _vel[0] * this->DLinForwardSpeed;
   _D *= this->scalingDamping;
 }
 

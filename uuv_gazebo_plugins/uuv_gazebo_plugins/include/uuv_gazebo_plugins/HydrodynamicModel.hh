@@ -202,6 +202,10 @@ class HMFossen : public HydrodynamicModel
   protected: void ComputeQuadDampingMatrix(const Eigen::Vector6d& _vel,
                                        Eigen::Matrix6d &_D) const;
   
+  /// \brief Updates the quadratic damping matrix for the current velocity
+  protected: void ComputeLinForwardSpeedDampingMatrix(const Eigen::Vector6d& _vel,
+                                       Eigen::Matrix6d &_D) const;
+
   protected: void ComputeDamping(const Eigen::Vector6d& _vel,
                                  Eigen::Vector6d &_damping) const; // discarded
 
