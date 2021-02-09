@@ -1,0 +1,132 @@
+<?xml version="1.0" ?>
+<!-- Copyright (c) 2016 The UUV Simulator Authors.
+     All rights reserved.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<sdf version="1.5">
+  <model name="ocean_floor_box">
+    <static>true</static>
+    <link name="link">
+      <visual name="ground">
+        <cast_shadows>false</cast_shadows>
+        <pose>0 0 -500 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4000 4000 .1</size>
+          </box>
+          <!--<mesh>
+            <uri>model://herkules_seabed/meshes/herkules_seabed.dae</uri>
+            <scale>40.0 40.0 10.0</scale>
+          </mesh>-->
+
+        </geometry>
+        <!--<material>
+          <script>
+            <uri>file://Media/materials/scripts/ocean_floor.material</uri>
+            <name>UUVSimulator/OceanFloor</name>
+          </script>
+        </material>-->
+      </visual>
+
+      <collision name="ground">
+        <pose>0 0 -500 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4000 4000 .1</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <![CDATA[<visual name="surface">
+        <cast_shadows>false</cast_shadows>
+        <pose>0 0 -1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4000 4000 .1</size>
+          </box>
+        </geometry>
+        <!--<material>
+          <script>
+            <uri>file://Media/materials/scripts/water.material</uri>
+            <name>UUVSimulator/StaticDeepWater</name>
+          </script>
+        </material>-->
+      </visual>]]>
+
+      <visual name="north">
+        <cast_shadows>false</cast_shadows>
+        <pose>2000 0 -250 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>.1 4000 500</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://Media/materials/scripts/water.material</uri>
+            <name>UUVSimulator/SeaWall</name>
+          </script>
+        </material>
+      </visual>
+
+      <visual name="south">
+        <cast_shadows>false</cast_shadows>
+        <pose>-2000 0 -250 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>.1 4000 500</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://Media/materials/scripts/water.material</uri>
+            <name>UUVSimulator/SeaWall</name>
+          </script>
+        </material>
+      </visual>
+
+      <visual name="east">
+        <cast_shadows>false</cast_shadows>
+        <pose>0 -2000 -250 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4000 .1 500</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://Media/materials/scripts/water.material</uri>
+            <name>UUVSimulator/SeaWall</name>
+          </script>
+        </material>
+      </visual>
+
+      <visual name="west">
+        <cast_shadows>false</cast_shadows>
+        <pose>0 2000 -250 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4000 .1 500</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>file://Media/materials/scripts/water.material</uri>
+            <name>UUVSimulator/SeaWall</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
