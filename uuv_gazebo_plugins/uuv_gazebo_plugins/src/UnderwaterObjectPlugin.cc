@@ -31,7 +31,7 @@ namespace gazebo {
 GZ_REGISTER_MODEL_PLUGIN(UnderwaterObjectPlugin)
 
 /////////////////////////////////////////////////
-UnderwaterObjectPlugin::UnderwaterObjectPlugin() : useGlobalCurrent(true)
+UnderwaterObjectPlugin::UnderwaterObjectPlugin() : useGlobalCurrent(true), useDisturbance(true)
 {
 }
 
@@ -78,6 +78,18 @@ void UnderwaterObjectPlugin::Load(physics::ModelPtr _model,
       &UnderwaterObjectPlugin::UpdateFlowVelocity, this);
   }
 
+  if (_sdf->HasElement("disturbance_topic"))
+  {
+    std::string disturbTopic = _sdf->Get<std::string>("disturbance_topic");
+    GZ_ASSERT(!disturbTopic.empty(),
+              "disturbance topic tag cannot be empty");
+
+    gzmsg << "Subscribing to disturbance topic: " << disturbTopic
+        << std::endl;
+    this->disturbSubscriber = this->node->Subscribe(disturbTopic,
+      &UnderwaterObjectPlugin::UpdateDisturbance, this);
+  }
+  
   double fluidDensity = 1028.0;
   // Get the fluid density, if present
   if (_sdf->HasElement("fluid_density"))
@@ -224,7 +236,9 @@ void UnderwaterObjectPlugin::Update(const common::UpdateInfo &_info)
     link_force = link->GetRelativeForce();
     link_torque = link->GetRelativeTorque();
 #endif
+
     /* Test interface  */ 
+    /*
     if(std::isnan(linearAccel)){
         printf("Lin acc of %s: %f, %f, %f\n", link->GetName().c_str(), lin_acc[0], lin_acc[1], lin_acc[2]);
         printf("Force of %s: %f, %f, %f\n", link->GetName().c_str(), link_force[0], link_force[1], link_force[2]);
@@ -236,9 +250,10 @@ void UnderwaterObjectPlugin::Update(const common::UpdateInfo &_info)
         printf("Force of %s: %f, %f, %f\n", link->GetName().c_str(), link_force[0], link_force[1], link_force[2]);
         printf("Torque of %s: %f, %f, %f\n", link->GetName().c_str(), link_torque[0], link_torque[1], link_torque[2]);
     }
-
+    */
     GZ_ASSERT(!std::isnan(linearAccel) && !std::isnan(angularAccel),
-     "Linear or angular accelerations are invalid.");
+      "Linear or angular accelerations are invalid.");
+    
 
     hydro->ApplyHydrodynamicForces(time, this->flowVelocity);
     this->PublishRestoringForce(link);
@@ -280,6 +295,20 @@ void UnderwaterObjectPlugin::UpdateFlowVelocity(ConstVector3dPtr &_msg)
     this->flowVelocity.Y() = _msg->y();
     this->flowVelocity.Z() = _msg->z();
   }
+}
+
+/////////////////////////////////////////////////
+void UnderwaterObjectPlugin::UpdateDisturbance(ConstWrenchStampedPtr& _msg)
+{
+    if(this->useDisturbance){
+        this->disturbForce.X() = _msg->wrench().force().x();
+        this->disturbForce.Y() = _msg->wrench().force().y();
+        this->disturbForce.Z() = _msg->wrench().force().z();
+
+        this->disturbTorque.X() = _msg->wrench().torque().x();
+        this->disturbTorque.Y() = _msg->wrench().torque().y();
+        this->disturbTorque.Z() = _msg->wrench().torque().z();
+    }
 }
 
 /////////////////////////////////////////////////
