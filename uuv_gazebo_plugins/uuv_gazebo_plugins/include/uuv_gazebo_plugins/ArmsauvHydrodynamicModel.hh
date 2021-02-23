@@ -245,6 +245,9 @@ class ArmsauvFossen : public ArmsauvHydrodynamicModel
   
   /// \brief Buoyancy of uuv
   protected: double buoy;
+
+  /// \brief Centre of gravity
+  protected: std::vector<double> cog;
   
   /// \brief inertia of uuv
   protected: std::vector<double> inertia;

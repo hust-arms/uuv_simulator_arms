@@ -246,7 +246,13 @@ ArmsauvFossen::ArmsauvFossen(sdf::ElementPtr _sdf,
       this->mass = _sdf->Get<double>("mass");
       gzmsg << "UUV mass: " << this->mass << std::endl;
   }
-  
+
+  // Get centre of gravity
+  if(_sdf->HasElement("cog"))
+  {
+      this->cog = Str2Vector(_sdf->Get<std::string>("cog"));
+  }
+
   // Get inertia
   if(_sdf->HasElement("inertia"))
   {
@@ -269,16 +275,14 @@ ArmsauvFossen::ArmsauvFossen(sdf::ElementPtr _sdf,
   if(_sdf->HasElement("rotor_constant_left"))
       this->rotorConstantL = _sdf->Get<double>("rotor_constant_left");
 
-  std::vector<double> cog{0, 0, 0};
-
   Eigen::Matrix6d mrb;
   // Get rigid body transform matrix
-  mrb << this->mass, 0.0, 0.0, 0.0, this->mass*cog[2], -this->mass*cog[1],
-       0.0, this->mass, 0.0, -this->mass*cog[2], 0.0, this->mass*cog[0],
-       0.0, 0.0, this->mass, this->mass*cog[1], -this->mass*cog[0], 0.0,
-       0.0, -this->mass*cog[2], this->mass*cog[1], this->inertia[0], 0.0, 0.0,
-       this->mass*cog[2], 0.0, -this->mass*cog[0], 0.0, this->inertia[1], 0.0,
-       -this->mass*cog[1], this->mass*cog[0], 0.0, 0.0, 0.0, this->inertia[2];
+  mrb << this->mass, 0.0, 0.0, 0.0, this->mass*this->cog[2], -this->mass*this->cog[1],
+       0.0, this->mass, 0.0, -this->mass*this->cog[2], 0.0, this->mass*this->cog[0],
+       0.0, 0.0, this->mass, this->mass*this->cog[1], -this->mass*this->cog[0], 0.0,
+       0.0, -this->mass*this->cog[2], this->mass*this->cog[1], this->inertia[0], 0.0, 0.0,
+       this->mass*this->cog[2], 0.0, -this->mass*this->cog[0], 0.0, this->inertia[1], 0.0,
+       -this->mass*this->cog[1], this->mass*this->cog[0], 0.0, 0.0, 0.0, this->inertia[2];
 
   this->Mrb = mrb;
 
@@ -481,7 +485,7 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
   restoring_force.Z() = (this->mass*g_acc - this->buoy)*std::cos(euler.Y())*std::cos(euler.X());
 
   ignition::math::Vector3d restoring_torque;
-  std::vector<double> cog{0.0, 0.0, 0.0};
+  std::vector<double> cog = this->cog;
   ignition::math::Vector3d cob = this->GetCoB();
   double xg = cog[0]; double yg = cog[1]; double zg = cog[2];
   double xb = cob.X(); double yb = cob.Y(); double zb = cob.Z();
