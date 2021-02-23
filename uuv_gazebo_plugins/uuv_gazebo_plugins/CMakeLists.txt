@@ -87,6 +87,17 @@ add_dependencies(uuv_fin_plugin
   ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_fin_plugin)
 
+add_library(armsauv_plugin
+    src/ArmsauvPlugin.cc
+    src/ArmsauvHydrodynamicModel.cc
+    src/BuoyantObject.cc
+)
+target_link_libraries(armsauv_plugin
+    ${catkin_LIBRARIES}
+    ${EIGEN3_LIBRARIES}
+)
+list(APPEND UUV_GAZEBO_PLUGINS_LIST armsauv_plugin)
+
 add_library(uuv_underwater_object_plugin
     src/HydrodynamicModel.cc
     src/BuoyantObject.cc
