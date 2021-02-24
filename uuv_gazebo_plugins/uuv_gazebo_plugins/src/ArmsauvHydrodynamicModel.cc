@@ -89,6 +89,8 @@ ArmsauvHydrodynamicModel::ArmsauvHydrodynamicModel(sdf::ElementPtr _sdf,
   {
     if (_sdf->Get<bool>("neutrally_buoyant"))
       this->SetNeutrallyBuoyant();
+    else
+      gzmsg << "not neutrally buoyant" <<std::endl;
   }
 
   // Initialize Reynolds number with zero (will not always be used)
@@ -232,6 +234,7 @@ REGISTER_ArmsauvHydrodynamicModel_CREATOR(ArmsauvFossen,
 ArmsauvHydrodynamicModel* ArmsauvFossen::create(sdf::ElementPtr _sdf,
                                     physics::LinkPtr _link)
 {
+  gzmsg << "Create armsauv fossen model" << std::endl;
   return new ArmsauvFossen(_sdf, _link);
 }
 
@@ -239,41 +242,89 @@ ArmsauvHydrodynamicModel* ArmsauvFossen::create(sdf::ElementPtr _sdf,
 ArmsauvFossen::ArmsauvFossen(sdf::ElementPtr _sdf,
                    physics::LinkPtr _link)
                   : ArmsauvHydrodynamicModel(_sdf, _link)
-{
+{  
+  GZ_ASSERT(_sdf->HasElement("hydrodynamic_model"),
+            "Hydrodynamic model is missing");
+
+  sdf::ElementPtr modelParams = _sdf->GetElement("hydrodynamic_model");
+
+  gzmsg << "Parse hydrodynamic parameters" << std::endl;
+
   // Get mass 
-  if (_sdf->HasElement("mass"))
+  if (modelParams->HasElement("body_mass"))
   {
-      this->mass = _sdf->Get<double>("mass");
-      gzmsg << "UUV mass: " << this->mass << std::endl;
+      this->mass = modelParams->Get<double>("body_mass");
+      gzmsg << "Get body mass: " << this->mass << std::endl;
   }
+  this->params.push_back("body_mass");
+
+  // Get buoyancy
+  if (modelParams->HasElement("body_buoyancy"))
+  {
+      this->buoy = modelParams->Get<double>("body_buoyancy");
+      gzmsg << "Get body buoyancy: " << this->buoy << std::endl;
+  }
+  this->params.push_back("body_buoyancy");
 
   // Get centre of gravity
-  if(_sdf->HasElement("cog"))
+  if(modelParams->HasElement("center_of_gravity"))
   {
-      this->cog = Str2Vector(_sdf->Get<std::string>("cog"));
+      this->cog = Str2Vector(modelParams->Get<std::string>("center_of_gravity"));
+      GZ_ASSERT(this->cog.size() == 3, "Dimension should be 3");
+      gzmsg << "Get cog: " << this->cog[0] << " " << this->cog[1] << " " << this->cog[2]
+          << std::endl;
   }
+  this->params.push_back("center_of_gravity");
 
   // Get inertia
-  if(_sdf->HasElement("inertia"))
+  if(modelParams->HasElement("inertia"))
   {
-      this->inertia = Str2Vector(_sdf->Get<std::string>("inertia"));
+      this->inertia = Str2Vector(modelParams->Get<std::string>("inertia"));
+      GZ_ASSERT(this->inertia.size() == 3, "Dimension should be 3");
+      gzmsg << "Get inertia: " << this->inertia[0] << " " << this->inertia[1] << " " << this->inertia[2]
+          << std::endl;
   }
+  this->params.push_back("inertia");
 
   // Get death zone of thruster
-  if(_sdf->HasElement("delta_left"))
-      this->deltaLeft = _sdf->Get<double>("delta_left");
+  if(modelParams->HasElement("delta_left"))
+  {
+      this->deltaLeft = modelParams->Get<double>("delta_left");
+      gzmsg << "Get delta left: " << this->deltaLeft << std::endl;
+  }
+  this->params.push_back("delta_left");
   
   // Get death zone of thruster
-  if(_sdf->HasElement("delta_right"))
-      this->deltaRight = _sdf->Get<double>("delta_right");
+  if(modelParams->HasElement("delta_right"))
+  {
+      this->deltaRight = modelParams->Get<double>("delta_right");
+      gzmsg << "Get delta right: " << this->deltaRight << std::endl;
+  }
+  this->params.push_back("delta_right");
   
   // Get rotor constant
-  if(_sdf->HasElement("rotor_constant_right"))
-      this->rotorConstantR = _sdf->Get<double>("rotor_constant_right");
+  if(modelParams->HasElement("rotor_constant_right"))
+  {
+      this->rotorConstantR = modelParams->Get<double>("rotor_constant_right");
+      gzmsg << "Get right rotor constant: " << this->rotorConstantR << std::endl;
+  }
+  this->params.push_back("rotor_constant_right");
   
   // Get rotor constant
-  if(_sdf->HasElement("rotor_constant_left"))
-      this->rotorConstantL = _sdf->Get<double>("rotor_constant_left");
+  if(modelParams->HasElement("rotor_constant_left"))
+  {
+      this->rotorConstantL = modelParams->Get<double>("rotor_constant_left");
+      gzmsg << "Get left rotor constant: " << this->rotorConstantL << std::endl;
+  }
+  this->params.push_back("rotor_constant_left");
+
+  // Get rotor speed threshold
+  if(modelParams->HasElement("rotor_speed_threshold"))
+  {
+      this->rotorConstantR = modelParams->Get<double>("rotor_speed_threshold");
+      gzmsg << "Rotor speed threshold: " << this->rotorSpeedThreshold << std::endl;
+  }
+  this->params.push_back("rotor_constant_right");
 
   Eigen::Matrix6d mrb;
   // Get rigid body transform matrix
@@ -287,32 +338,45 @@ ArmsauvFossen::ArmsauvFossen(sdf::ElementPtr _sdf,
   this->Mrb = mrb;
 
   // Get front rudder
-  if(_sdf->HasElement("front_rudder_factor"))
+  if(modelParams->HasElement("front_rudder_factor"))
   {
-      this->frontRudderFactor = Str2Vector(_sdf->Get<std::string>("front_rudder_factor"));
+      this->frontRudderFactor = Str2Vector(modelParams->Get<std::string>("front_rudder_factor"));
+      GZ_ASSERT(this->frontRudderFactor.size() == 6, "Dimension should be 6");
+      gzmsg << "Get front rudder factor: " << this->frontRudderFactor[0] << " " << this->frontRudderFactor[1] << " " << this->frontRudderFactor[2]
+          << " " << this->frontRudderFactor[3] << " " << this->frontRudderFactor[4] << " " << this->frontRudderFactor[5] << std::endl;
   }
+  this->params.push_back("front_rudder_factor");
   
   // Get back rudder
-  if(_sdf->HasElement("back_rudder_factor"))
+  if(modelParams->HasElement("back_rudder_factor"))
   {
-      this->backRudderFactor = Str2Vector(_sdf->Get<std::string>("back_rudder_factor"));
+      this->backRudderFactor = Str2Vector(modelParams->Get<std::string>("back_rudder_factor"));
+      GZ_ASSERT(this->backRudderFactor.size() == 6, "Dimension should be 6");
+      gzmsg << "Get back rudder factor: " << this->backRudderFactor[0] << " " << this->backRudderFactor[1] << " " << this->backRudderFactor[2]
+          << " " << this->backRudderFactor[3] << " " << this->backRudderFactor[4] << " " << this->backRudderFactor[5] << std::endl;
   }
+  this->params.push_back("back_rudder_factor");
   
   // Get vert rudder
-  if(_sdf->HasElement("vertical_rudder_factor"))
+  if(modelParams->HasElement("vertical_rudder_factor"))
   {
-      this->vertRudderFactor = Str2Vector(_sdf->Get<std::string>("vertical_rudder_factor"));
+      this->vertRudderFactor = Str2Vector(modelParams->Get<std::string>("vertical_rudder_factor"));
+      GZ_ASSERT(this->vertRudderFactor.size() == 6, "Dimension should be 6");
+      gzmsg << "Get vertical rudder factor: " << this->vertRudderFactor[0] << " " << this->vertRudderFactor[1] << " " << this->vertRudderFactor[2]
+          << " " << this->vertRudderFactor[3] << " " << this->vertRudderFactor[4] << " " << this->vertRudderFactor[5] << std::endl;
   }
+  this->params.push_back("vertical_rudder_factor");
 
   std::vector<double> addedMass(36, 0.0);
   std::vector<double> linDampCoef(6, 0.0);
   std::vector<double> linDampForward(6, 0.0);
   std::vector<double> quadDampCoef(6, 0.0);
 
-  GZ_ASSERT(_sdf->HasElement("hydrodynamic_model"),
-            "Hydrodynamic model is missing");
+  // GZ_ASSERT(_sdf->HasElement("hydrodynamic_model"),
+  //           "Hydrodynamic model is missing");
 
-  sdf::ElementPtr modelParams = _sdf->GetElement("hydrodynamic_model");
+  // sdf::ElementPtr modelParams = _sdf->GetElement("hydrodynamic_model");
+  
   // Load added-mass coefficients, if provided. Otherwise, the added-mass
   // matrix is set to zero
   if (modelParams->HasElement("added_mass"))
@@ -463,6 +527,7 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
 
   // get gravity acc
   double g_acc = this->GetGravity();
+  gzmsg << "Gravity acc: " << g_acc << std::endl;
 
   // Transform the flow velocity to the BODY frame
   ignition::math::Vector3d flowVel = pose.Rot().RotateVectorReverse(
@@ -474,13 +539,18 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
     this->ToNED(linVel - flowVel),
     this->ToNED(angVel));
 
+  gzmsg << "Relative velocity: " << velRel[0] << " " << velRel[1] << " " << velRel[2] 
+      << " " << velRel[3] << " " << velRel[4] << " " << velRel[5] << std::endl;
+
   // get pose in euler
   ignition::math::Quaternion<double> quad = pose.Rot();
   ignition::math::Vector3d euler = quad.Euler();
+
+  gzmsg << "Pose: " << euler.X() << " " << euler.Y() << " " << euler.Z() << std::endl;
   
   /* Calculate restoring force & torque */
   ignition::math::Vector3d restoring_force;
-  restoring_force.X() = -(this->mass*g_acc - this->buoy)*euler.Y();
+  restoring_force.X() = -(this->mass*g_acc - this->buoy)*std::sin(euler.Y());
   restoring_force.Y() = (this->mass*g_acc - this->buoy)*std::cos(euler.Y())*std::sin(euler.X());
   restoring_force.Z() = (this->mass*g_acc - this->buoy)*std::cos(euler.Y())*std::cos(euler.X());
 
@@ -496,18 +566,25 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
   restoring_torque.Z() = (xg*this->mass*g_acc - xb*this->buoy)*std::cos(euler.Y())*std::sin(euler.X())-
       (yg*this->mass*g_acc - yb*this->buoy)*std::sin(euler.Y());
 
+  gzmsg << "Restoring wrench: " << restoring_force.X() << " " << restoring_force.Y() << " " << restoring_torque.Z()
+      << " " << restoring_torque.X() << " " << restoring_torque.Y() << " " << restoring_torque.Z() << std::endl;
+
   Eigen::Vector6d tau_bg = EigenStack(restoring_force, restoring_torque);
 
   /* Calculate thruster force */
   ignition::math::Vector3d thruster_force, thruster_torque;
   // double rpm = std::floor(this->rpm);
   double rpm = std::floor(_rpm);
-  if(rpm > 0.0){
+  if(rpm > this->rotorSpeedThreshold){
       thruster_force.X() = this->rotorConstantR * (rpm * fabs(rpm) - this->deltaRight);
   }
-  else{
+  else if(rpm < -this->rotorSpeedThreshold){
       thruster_force.X() = this->rotorConstantL * (rpm * fabs(rpm) - this->deltaLeft);
   }
+  else{
+      thruster_force.X() = 0.0;
+  }
+
   thruster_force.Y() = 0.0;
   thruster_force.Z() = 0.0;
   thruster_torque.X() = 0.0;
@@ -515,6 +592,9 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
   thruster_torque.Z() = 0.0;
   
   Eigen::Vector6d tau_c = EigenStack(thruster_force, restoring_torque);
+
+  gzmsg << "Thruster wrench: " << tau_c[0] << " " << tau_c[1] << " " << tau_c[2]
+      << " " << tau_c[3] << " " << tau_c[4] << " " << tau_c[5] << std::endl;
 
   /* Calculate rudder lift & drag */
   ignition::math::Vector3d rudder_force, rudder_torque;
@@ -560,6 +640,7 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
 
   // Estimate acc
   Eigen::Vector6d acc = (this->Mrb + this->Ma).inverse()*(-(this->Crb + this->Ca + this->D)*velRel + tau_bg + tau_r + tau_c);
+  gzmsg << "Acceleration: " << acc << std::endl;
 
   // Added-mass forces and torques
   // Eigen::Vector6d added = -this->GetAddedMass() * this->filteredAcc;
@@ -575,12 +656,13 @@ void ArmsauvFossen::ApplyHydrodynamicForces(
   // GZ_ASSERT(!std::isnan(tau.norm()), msg.c_str());
 
   /* Test interface */
+  /*
   printf("Force of %s: %f, %f, %f\n", this->link->GetName().c_str(), tau.head(0), tau.head(1), tau.head(2));
   printf("Torque of %s: %f, %f, %f\n", this->link->GetName().c_str(), tau.head(3), tau.head(4), tau.head(5));
 
   if(!std::isnan(tau.norm())){
       printf("force norm of %s: %f\n", this->link->GetName().c_str(), tau.norm());
-  }
+  }*/
   
   // GZ_ASSERT(!std::isnan(tau.norm()), ": Hydrodynamic forces vector is nan");
 
@@ -770,6 +852,41 @@ Eigen::Matrix6d ArmsauvFossen::GetAddedMass() const
 bool ArmsauvFossen::GetParam(std::string _tag, std::vector<double>& _output)
 {
   _output = std::vector<double>();
+  if(!_tag.compare("center_of_gravity"))
+  {
+      for(int i = 0; i < this->cog.size(); ++i)
+      {
+          _output.push_back(this->cog[i]);
+      }
+  }
+  if(!_tag.compare("inertia"))
+  {
+      for(int i = 0; i < this->inertia.size(); ++i)
+      {
+          _output.push_back(this->inertia[i]);
+      }
+  }
+  if(!_tag.compare("front_rudder_factor"))
+  {
+      for(int i = 0; i < this->frontRudderFactor.size(); ++i)
+      {
+          _output.push_back(this->frontRudderFactor[i]);
+      }
+  }
+  if(!_tag.compare("back_rudder_factor"))
+  {
+      for(int i = 0; i < this->backRudderFactor.size(); ++i)
+      {
+          _output.push_back(this->backRudderFactor[i]);
+      }
+  }
+  if(!_tag.compare("vertical_rudder_factor"))
+  {
+      for(int i = 0; i < this->vertRudderFactor.size(); ++i)
+      {
+          _output.push_back(this->vertRudderFactor[i]);
+      }
+  }
   if (!_tag.compare("added_mass"))
   {
     for (int i = 0; i < 6; i++)
@@ -839,6 +956,18 @@ bool ArmsauvFossen::GetParam(std::string _tag, double& _output)
     _output = this->offsetLinForwardSpeedDamping;
   else if (!_tag.compare("offset_nonlin_damping"))
     _output = this->offsetNonLinDamping;
+  else if(!_tag.compare("mass"))
+    _output = this->mass;
+  else if(!_tag.compare("delta_left"))
+    _output = this->deltaLeft;
+  else if(!_tag.compare("delta_right"))
+    _output = this->deltaRight;
+  else if(!_tag.compare("rotor_constant_left"))
+    _output = this->rotorConstantL;
+  else if(!_tag.compare("rotor_constant_right"))
+    _output = this->rotorConstantR;
+  else if(!_tag.compare("rotor_speed_threshold"))
+    _output = this->rotorSpeedThreshold;
   else
   {
     _output = -1.0;
@@ -887,6 +1016,20 @@ bool ArmsauvFossen::SetParam(std::string _tag, double _input)
     this->offsetLinForwardSpeedDamping = _input;
   else if (!_tag.compare("offset_nonlin_damping"))
     this->offsetNonLinDamping = _input;
+  else if(!_tag.compare("body_mass"))
+      this->mass = _input;
+  else if(!_tag.compare("body_buoyancy"))
+      this->buoy = _input;
+  else if(!_tag.compare("delta_left"))
+      this->deltaLeft = _input;
+  else if(!_tag.compare("delta_right"))
+      this->deltaRight = _input;
+  else if(!_tag.compare("rotor_constant_left"))
+      this->rotorConstantL = _input;
+  else if(!_tag.compare("rotor_constant_right"))
+      this->rotorConstantR = _input;
+  else if(!_tag.compare("rotor_speed_threshold"))
+      this->rotorSpeedThreshold = _input;
   else
     return false;
   gzmsg << "ArmsauvHydrodynamicModel::SetParam <" << _tag << ">=" << _input <<
@@ -974,6 +1117,64 @@ void ArmsauvFossen::Print(std::string _paramName, std::string _message)
   else if (!_paramName.compare("volume"))
   {
     std::cout << std::setw(12) << this->volume << " m^3" << std::endl;
+  }
+  else if(!_paramName.compare("body_mass"))
+  {
+    std::cout << std::setw(12) << this->mass << " kg" << std::endl;
+  }
+  else if(!_paramName.compare("body_buoyancy"))
+  {
+    std::cout << std::setw(12) << this->buoy << " N" << std::endl;
+  }
+  else if(!_paramName.compare("center_of_gravity"))
+  {
+    for (int i = 0; i < 3; i++)
+      std::cout << std::setw(12) << this->cog[i];
+    std::cout << std::endl;
+  }
+  else if(!_paramName.compare("inertia"))
+  {
+    for (int i = 0; i < 3; i++)
+      std::cout << std::setw(12) << this->inertia[i];
+    std::cout << std::endl;
+  }
+  else if(!_paramName.compare("delta_left"))
+  {
+      std::cout << std::setw(12) << this->deltaLeft << std::endl;
+  }
+  else if(!_paramName.compare("delta_right"))
+  {
+      std::cout << std::setw(12) << this->deltaRight << std::endl;
+  }
+  else if(!_paramName.compare("rotor_constant_right"))
+  {
+      std::cout << std::setw(12) << this->rotorConstantR << std::endl;
+  }
+  else if(!_paramName.compare("rotor_constant_left"))
+  {
+      std::cout << std::setw(12) << this->rotorConstantL << std::endl;
+  }
+  else if(!_paramName.compare("rotor_speed_threshold"))
+  {
+      std::cout << std::setw(12) << this->rotorSpeedThreshold << std::endl;
+  }
+  else if(!_paramName.compare("front_rudder_factor"))
+  {
+    for (int i = 0; i < 6; i++)
+      std::cout << std::setw(12) << this->frontRudderFactor[i];
+    std::cout << std::endl;
+  }
+  else if(!_paramName.compare("back_rudder_factor"))
+  {
+    for (int i = 0; i < 6; i++)
+      std::cout << std::setw(12) << this->backRudderFactor[i];
+    std::cout << std::endl;
+  }
+  else if(!_paramName.compare("vertical_rudder_factor"))
+  {
+    for (int i = 0; i < 6; i++)
+      std::cout << std::setw(12) << this->vertRudderFactor[i];
+    std::cout << std::endl;
   }
 }
 }; // ns

@@ -338,6 +338,9 @@ class ArmsauvFossen : public ArmsauvHydrodynamicModel
   
   /// \brief rotor constant
   protected: double rotorConstantL;
+
+  /// \brief rotor speed threshold
+  protected: double rotorSpeedThreshold;
 };
 }
 
