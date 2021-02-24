@@ -24,6 +24,7 @@ catkin_package(
  INCLUDE_DIRS include
  LIBRARIES
   uuv_fin_ros_plugin
+  uuv_armsauv_ros_plugin
   uuv_thruster_ros_plugin
   uuv_underwater_object_ros_plugin
   uuv_joint_state_publisher
@@ -47,10 +48,10 @@ link_directories(
   ${GAZEBO_LIBRARY_DIRS}
 )
 
-add_library(armsauv_ros_plugin src/ArmsauvROSPlugin.cc)
-target_link_libraries(armsauv_ros_plugin ${catkin_LIBRARIES})
-add_dependencies(armsauv_ros_plugin ${catkin_EXPORTED_TARGETS})
-list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST armsauv_ros_plugin)
+add_library(uuv_armsauv_ros_plugin src/ArmsauvROSPlugin.cc)
+target_link_libraries(uuv_armsauv_ros_plugin ${catkin_LIBRARIES})
+add_dependencies(uuv_armsauv_ros_plugin ${catkin_EXPORTED_TARGETS})
+list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST uuv_armsauv_ros_plugin)
 
 add_library(uuv_fin_ros_plugin src/FinROSPlugin.cc)
 target_link_libraries(uuv_fin_ros_plugin ${catkin_LIBRARIES})
