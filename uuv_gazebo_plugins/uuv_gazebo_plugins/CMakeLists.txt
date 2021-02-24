@@ -42,6 +42,7 @@ catkin_package(
     ${GAZEBO_MSG_INCLUDE_DIRS}
   LIBRARIES
     uuv_underwater_object_plugin
+    uuv_armsauv_plugin
     uuv_thruster_plugin
     uuv_fin_plugin
     uuv_dynamics
@@ -87,16 +88,16 @@ add_dependencies(uuv_fin_plugin
   ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_fin_plugin)
 
-add_library(armsauv_plugin
+add_library(uuv_armsauv_plugin
     src/ArmsauvPlugin.cc
     src/ArmsauvHydrodynamicModel.cc
     src/BuoyantObject.cc
 )
-target_link_libraries(armsauv_plugin
+target_link_libraries(uuv_armsauv_plugin
     ${catkin_LIBRARIES}
     ${EIGEN3_LIBRARIES}
 )
-list(APPEND UUV_GAZEBO_PLUGINS_LIST armsauv_plugin)
+list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_armsauv_plugin)
 
 add_library(uuv_underwater_object_plugin
     src/HydrodynamicModel.cc
