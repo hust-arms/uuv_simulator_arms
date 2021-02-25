@@ -65,6 +65,9 @@ void ArmsauvFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   strs << "/" << _model->GetName() << "/fins/" << this->finID << "/";
   this->topicPrefix = strs.str();
 
+  // Initialize angle
+  this->angle = 0;
+
   // Input/output topics
   std::string inputTopic, outputTopic;
   if (_sdf->HasElement("input_topic"))
@@ -87,6 +90,20 @@ void ArmsauvFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->joint = _model->GetJoint(joint_name);
   GZ_ASSERT(this->joint, "joint is invalid");
 
+  // Get base link
+  this->baseLinkName = std::string();
+  if(_sdf->HasElement("base"))
+  {
+      this->baseLinkName = _sdf->Get<std::string>("base");
+      gzmsg << "Base: " << this->baseLinkName;
+  }
+  else
+  {
+      gzerr << "Cannot find base" << std::endl;
+  }
+  this->baseLink = _model->GetLink(this->baseLinkName);
+  GZ_ASSERT(this->baseLink != nullptr, "[ArmsauvFinPlugin]: Cannot get model of base link!");
+
   // Dynamic model
   GZ_ASSERT(_sdf->HasElement("dynamics"), "Could not find dynamics.");
   this->dynamics.reset(DynamicsFactory::GetInstance().CreateDynamics(
@@ -97,6 +114,8 @@ void ArmsauvFinPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   this->rudderFactors = Str2Vector(_sdf->Get<std::string>("rudder_factors"));
 
   GZ_ASSERT(rudderFactors.size() == 6, "Rudder factors should has 6 elements.");
+  gzmsg << "Rudder factors: " << rudderFactors[0] << " " << rudderFactors[1] << " " << rudderFactors[2] 
+      << " " << rudderFactors[3] << " " << rudderFactors[4] << " " << rudderFactors[5] << std::endl;
 
   // Lift and drag model
   /*
@@ -147,28 +166,6 @@ void ArmsauvFinPlugin::OnUpdate(const common::UpdateInfo &_info)
   GZ_ASSERT(!std::isnan(this->inputCommand),
             "nan in this->inputCommand");
 
-  // Get base link
-  this->baseLinkName = std::string();
-
-  if(_sdf->HasElement("link"))
-  {
-      for(sdf::ElementPtr linkElem = _sdf->GetElement("link"); linkElem; 
-          linkElem = linkElem->GetNextElement("link"))
-      {
-          std::string linkName = "";
-          if(linkElem->HasAttribute("name"))
-          {
-              linkName = linkElem->Get<std::string>("name");
-              std::size_t found = linkName.find("base_link");
-              if(found != std::string::npos)
-              {
-                  this->baseLinkName = linkName;
-                  gzmsg << "[ArmsauvFinPlugin]: " << this->baseLinkName << std::endl;
-              }
-          }
-      }
-  }
-
   double upperLimit, lowerLimit;
 #if GAZEBO_MAJOR_VERSION >= 8
   upperLimit = this->joint->UpperLimit(0);
@@ -206,36 +203,55 @@ void ArmsauvFinPlugin::OnUpdate(const common::UpdateInfo &_info)
   */
 
   // Get velocity of vehicle body
-  physics::LinkPtr baseLink = this->model->GetLink(this->baseLinkName);
-  GZ_ASSERT(link != nullptr, "[ArmsauvFinPlugin]: Cannot get model of base link!");
-
   ignition::math::Vector3d linVel;
+  ignition::math::Pose3d pose;
+
 #if GAZEBO_MAJOR_VERSION >= 8
   linVel = baseLink->RelativeLinearVel();
+  pose = baseLink->WorldPose();
 #else
   gazebo::math::Vector3 linVelG;
   linVelG = baseLink->GetRelativeLinearVel();
   linVel = ignition::math::Vector3d(linVelG.x, linVelG.y, linVelG.z);
+  pose = baseLin->GetWorldPose().Ign();
 #endif
+
+  // Get flow velocity under BODY frame
+  ignition::math::Vector3d flowVel = pose.Rot().RotateVectorReverse(this->currentVelocity);
+
+  ignition::math::Vector3d velRel = this->ToNED(linVel - flowVel);
 
   // Compute lift and drag forces:
   // this->finForce = this->liftdrag->compute(velInLDPlaneL);
-  double u = linVel.X();
+  double u = velRel.X();
   this->finForce.X() = rudderFactors[0] * angle * u * u;
   this->finForce.Y() = rudderFactors[1] * angle * u * u;
   this->finForce.Z() = rudderFactors[2] * angle * u * u;
-  this->finTorquee.X() = rudderFactors[0] * angle * u * u;
-  this->finTorquee.Y() = rudderFactors[1] * angle * u * u;
-  this->finTorquee.Z() = rudderFactors[2] * angle * u * u;
+  this->finTorque.X() = rudderFactors[0] * angle * u * u;
+  this->finTorque.Y() = rudderFactors[1] * angle * u * u;
+  this->finTorque.Z() = rudderFactors[2] * angle * u * u;
+
+  // gzmsg << "Wrench of Fin " << this->finID << ": "
+  //     << this->finForce.X() << " " << this->finForce.Y() << " " << this->finForce.Z() << " "
+  //     << this->finTorque.X() << " " << this->finTorque.Y() << " " << this->finTorque.Z() << std::endl;
 
   // Apply forces at cg (with torques for position shift).
-  baselink->AddRelativeForce(this->finForce);
-  baselink->AddRelativeTorque(this->finTorque);
+  this->baseLink->AddRelativeForce(this->finForce);
+  this->baseLink->AddRelativeTorque(this->finTorque);
 
   // Apply new fin angle. Do this last since this sets link's velocity to zero.
   this->joint->SetPosition(0, this->angle);
 
   this->angleStamp = _info.simTime;
+}
+
+/////////////////////////////////////////////////
+ignition::math::Vector3d ArmsauvFinPlugin::ToNED(ignition::math::Vector3d _vec)
+{
+  ignition::math::Vector3d output = _vec;
+  output.Y() = -1 * output.Y();
+  output.Z() = -1 * output.Z();
+  return output;
 }
 
 /////////////////////////////////////////////////

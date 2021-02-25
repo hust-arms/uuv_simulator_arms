@@ -54,6 +54,9 @@ class ArmsauvFinPlugin : public ModelPlugin
     /// \param[in] _info Information used in the update event.
     public: void OnUpdate(const common::UpdateInfo &_info);
 
+    /// \brief Convert vector to comply with the NED reference frame
+    protected: ignition::math::Vector3d ToNED(ignition::math::Vector3d _vec);
+
     /// \brief Callback for the input topic subscriber
     protected: void UpdateInput(ConstDoublePtr &_msg);
 
@@ -83,6 +86,9 @@ class ArmsauvFinPlugin : public ModelPlugin
 
     /// \brief The fin link
     protected: physics::LinkPtr link;
+
+    /// \brief The base link
+    protected: physics::LinkPtr baseLink;
 
     /// \brief Subscriber to the reference signal topic.
     protected: transport::SubscriberPtr commandSubscriber;
