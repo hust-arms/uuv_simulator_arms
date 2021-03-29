@@ -31,7 +31,7 @@ namespace gazebo {
 GZ_REGISTER_MODEL_PLUGIN(UnderwaterObjectPlugin)
 
 /////////////////////////////////////////////////
-UnderwaterObjectPlugin::UnderwaterObjectPlugin() : useGlobalCurrent(true), useDisturbance(true)
+UnderwaterObjectPlugin::UnderwaterObjectPlugin() : useGlobalCurrent(true)
 {
 }
 
@@ -72,28 +72,21 @@ void UnderwaterObjectPlugin::Load(physics::ModelPtr _model,
     GZ_ASSERT(!flowTopic.empty(),
               "Fluid velocity topic tag cannot be empty");
 
-    gzmsg << "Subscribing to current velocity topic: " << flowTopic
+    gzmsg << "[UnderwaterObjectPlugin]: Subscribing to current velocity topic: " << flowTopic
         << std::endl;
     this->flowSubscriber = this->node->Subscribe(flowTopic,
       &UnderwaterObjectPlugin::UpdateFlowVelocity, this);
+    
+    gzmsg << "UnderwaterObjectPlugin test" << std::endl;
   }
 
-  if (_sdf->HasElement("disturbance_topic"))
-  {
-    std::string disturbTopic = _sdf->Get<std::string>("disturbance_topic");
-    GZ_ASSERT(!disturbTopic.empty(),
-              "disturbance topic tag cannot be empty");
-
-    gzmsg << "Subscribing to disturbance topic: " << disturbTopic
-        << std::endl;
-    this->disturbSubscriber = this->node->Subscribe(disturbTopic,
-      &UnderwaterObjectPlugin::UpdateDisturbance, this);
-  }
-  
   double fluidDensity = 1028.0;
   // Get the fluid density, if present
   if (_sdf->HasElement("fluid_density"))
+  {
     fluidDensity = _sdf->Get<double>("fluid_density");
+    gzmsg << "Fluid density: " << fluidDensity << std::endl;
+  }
 
   if (_sdf->HasElement("use_global_current"))
     this->useGlobalCurrent = _sdf->Get<bool>("use_global_current");
@@ -295,20 +288,6 @@ void UnderwaterObjectPlugin::UpdateFlowVelocity(ConstVector3dPtr &_msg)
     this->flowVelocity.Y() = _msg->y();
     this->flowVelocity.Z() = _msg->z();
   }
-}
-
-/////////////////////////////////////////////////
-void UnderwaterObjectPlugin::UpdateDisturbance(ConstWrenchStampedPtr& _msg)
-{
-    if(this->useDisturbance){
-        this->disturbForce.X() = _msg->wrench().force().x();
-        this->disturbForce.Y() = _msg->wrench().force().y();
-        this->disturbForce.Z() = _msg->wrench().force().z();
-
-        this->disturbTorque.X() = _msg->wrench().torque().x();
-        this->disturbTorque.Y() = _msg->wrench().torque().y();
-        this->disturbTorque.Z() = _msg->wrench().torque().z();
-    }
 }
 
 /////////////////////////////////////////////////

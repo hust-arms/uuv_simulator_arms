@@ -51,6 +51,11 @@ class HydrodynamicModel : public BuoyantObject
   public: virtual void ApplyHydrodynamicForces(
     double time, const ignition::math::Vector3d &_flowVelWorld) = 0;
 
+  /// \brief Apply disturbance
+  public: virtual void ApplyDisturbanceForces(
+    const ignition::math::Vector3d &_disturbForce,
+    const ignition::math::Vector3d &_disturbTorque) = 0;
+
   /// \brief Prints parameters
   public: virtual void Print(std::string _paramName,
     std::string _message = std::string()) = 0;
@@ -188,6 +193,11 @@ class HMFossen : public HydrodynamicModel
   /// \brief Computation of the hydrodynamic forces
   public: virtual void ApplyHydrodynamicForces(double time,
                             const ignition::math::Vector3d &_flowVelWorld);
+
+  /// \brief Apply disturbance
+  public: virtual void ApplyDisturbanceForces(
+    const ignition::math::Vector3d &_disturbForce,
+    const ignition::math::Vector3d &_disturbTorque);
 
   /// \brief Computes the added-mass Coriolis matrix Ca.
   protected: void ComputeAddedCoriolisMatrix(const Eigen::Vector6d& _vel,

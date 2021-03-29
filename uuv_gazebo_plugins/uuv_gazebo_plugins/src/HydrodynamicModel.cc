@@ -89,6 +89,8 @@ HydrodynamicModel::HydrodynamicModel(sdf::ElementPtr _sdf,
   {
     if (_sdf->Get<bool>("neutrally_buoyant"))
       this->SetNeutrallyBuoyant();
+    else
+      gzmsg << "not neutrally buoyant" << std::endl;
   }
 
   // Initialize Reynolds number with zero (will not always be used)
@@ -232,6 +234,7 @@ REGISTER_HYDRODYNAMICMODEL_CREATOR(HMFossen,
 HydrodynamicModel* HMFossen::create(sdf::ElementPtr _sdf,
                                     physics::LinkPtr _link)
 {
+  gzmsg << "Create fossen model" << std::endl;
   return new HMFossen(_sdf, _link);
 }
 
@@ -244,6 +247,8 @@ HMFossen::HMFossen(sdf::ElementPtr _sdf,
   std::vector<double> linDampCoef(6, 0.0);
   std::vector<double> linDampForward(6, 0.0);
   std::vector<double> quadDampCoef(6, 0.0);
+
+  gzmsg << "Parse hydrodynamic model parameters" << std::endl;
 
   GZ_ASSERT(_sdf->HasElement("hydrodynamic_model"),
             "Hydrodynamic model is missing");
@@ -402,9 +407,12 @@ void HMFossen::ApplyHydrodynamicForces(
 
   Eigen::Vector6d velRel, acc;
   // Compute the relative velocity
-  velRel = EigenStack(
-    this->ToNED(linVel - flowVel),
-    this->ToNED(angVel));
+  // velRel = EigenStack(
+  //   this->ToNED(linVel - flowVel),
+  //   this->ToNED(angVel));
+  //
+  // 
+  velRel = EigenStack(this->ToNED(linVel), this->ToNED(angVel));
 
   // Update added Coriolis matrix
   this->ComputeAddedCoriolisMatrix(velRel, this->Ma, this->Ca);
@@ -473,6 +481,28 @@ void HMFossen::ApplyHydrodynamicForces(
     this->StoreVector(UUV_ADDED_CORIOLIS_FORCE, Vec3dToGazebo(cor.head<3>()));
     this->StoreVector(UUV_ADDED_CORIOLIS_TORQUE, Vec3dToGazebo(cor.tail<3>()));
   }
+}
+
+/////////////////////////////////////////////////
+void HMFossen::ApplyDisturbanceForces(const ignition::math::Vector3d &_disturbForce, const ignition::math::Vector3d &_disturbTorque)
+{
+  // Link's pose
+  ignition::math::Pose3d pose;
+
+#if GAZEBO_MAJOR_VERSION >= 8
+  pose = this->link->WorldPose();
+#else
+  pose = this->link->GetWorldPose().Ign();
+#endif
+
+  // Transform the disturbance to the BODY frame
+  ignition::math::Vector3d disturbForce = pose.Rot().RotateVectorReverse(
+    _disturbForce);
+  ignition::math::Vector3d disturbTorque = pose.Rot().RotateVectorReverse(
+    _disturbTorque);
+
+  this->link->AddRelativeForce(disturbForce);
+  this->link->AddRelativeTorque(disturbTorque);
 }
 
 /////////////////////////////////////////////////

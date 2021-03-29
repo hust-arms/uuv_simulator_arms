@@ -90,9 +90,6 @@ class UnderwaterObjectPlugin : public gazebo::ModelPlugin
   protected: virtual void InitDebug(gazebo::physics::LinkPtr _link,
     gazebo::HydrodynamicModelPtr _hydro);
 
-  /// \brief Reads Disturbance topic
-  private: void UpdateDisturbance(ConstWrenchStampedPtr &_msg);
-
   /// \brief Pairs of links & corresponding hydrodynamic models
   protected: std::map<gazebo::physics::LinkPtr,
                       HydrodynamicModelPtr> models;
@@ -125,17 +122,6 @@ class UnderwaterObjectPlugin : public gazebo::ModelPlugin
   /// \brief Publishers of hydrodynamic and hydrostatic forces and torques in
   /// the case the debug flag is on
   protected: std::map<std::string, gazebo::transport::PublisherPtr> hydroPub;
-
-  /// \brief Disturbance force vector read from topic
-  private: ignition::math::Vector3d disturbForce;
-
-  /// \brief Disturbance torque vector read from topic
-  private: ignition::math::Vector3d disturbTorque;
-
-  /// \brief Subcriber to disturbance message
-  private: gazebo::transport::SubscriberPtr disturbSubscriber;
-  
-  protected: bool useDisturbance;
 };
 }
 
