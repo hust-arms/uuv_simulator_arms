@@ -93,6 +93,7 @@ list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST custom_battery_consumer_ros_plugin)
 
 add_library(base_update_ros_plugin src/BaseUpdateROSPlugin.cc)
 target_link_libraries(base_update_ros_plugin ${catkin_LIBRARIES})
+add_dependencies(base_update_ros_plugin ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST base_update_ros_plugin)
 
 install(TARGETS ${UUV_GAZEBO_ROS_PLUGINS_LIST}

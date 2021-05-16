@@ -32,6 +32,8 @@ BaseUpdateROSPlugin::~BaseUpdateROSPlugin()
 void BaseUpdateROSPlugin::Load(gazebo::physics::ModelPtr _parent, 
                                sdf::ElementPtr _sdf)
 {
+    gzmsg << "<BaseUpdateROSPlugin>: Load plugin" << std::endl;;
+    
     if(!ros::isInitialized())
     {
         gzerr << "Not loading plugin since ROS has not been "
@@ -39,8 +41,6 @@ void BaseUpdateROSPlugin::Load(gazebo::physics::ModelPtr _parent,
               << "  gazebo -s libgazebo_ros_api_plugin.so\n";
         return;
     }
-
-    gzmsg << "<BaseUpdateROSPlugin>: Load plugin\n";
 
     this->rosNode_.reset(new ros::NodeHandle(""));
 
@@ -58,7 +58,7 @@ void BaseUpdateROSPlugin::Load(gazebo::physics::ModelPtr _parent,
 
     // subscribe pose
     this->baseLinkStatesSub_ = this->rosNode_->subscribe<geometry_msgs::Pose>(
-        _parent->GetName() + "/base_link_states", 10, boost::bind(&BaseUpdateROSPlugin::UpdateBasePose, this, _1));
+        _parent->GetName() + "/base_link_state", 10, boost::bind(&BaseUpdateROSPlugin::UpdateBasePose, this, _1));
 
     this->nedTransform_.header.frame_id = this->model_->GetName() + "/base_link";
     this->nedTransform_.child_frame_id = this->model_->GetName() + "/base_linK_ned";

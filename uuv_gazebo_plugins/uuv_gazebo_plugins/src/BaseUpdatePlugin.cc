@@ -54,6 +54,8 @@ void BaseUpdatePlugin::Load(physics::ModelPtr _model,
     this->world_->SetPhysicsEnabled(false);
 
     // set node ptr 
+    this->node_ = transport::NodePtr(new transport::Node());
+    
     std::string worldName;
 #if GAZEBO_MAJOR_VERSION >= 8
     worldName = this->world_->Name();
@@ -61,6 +63,17 @@ void BaseUpdatePlugin::Load(physics::ModelPtr _model,
     worldName = this->world_->GetName();
 #endif
     this->node_->Init(worldName);
+
+    // set topics
+    std::string poseTopic;
+    if(_sdf->HasElement("base_link_state_topic"))
+        poseTopic = _sdf->Get<std::string>("base_link_state_topic");
+    else
+        poseTopic = "/" + _model->GetName() + "/base_link_state";
+
+    gzmsg << "<BaseUpdatePlugin>: base link pose topic: " << poseTopic << std::endl; 
+
+    this->poseSub_ = this->node_->Subscribe(poseTopic, &BaseUpdatePlugin::UpdateBasePose, this);
 
     // find base link
     if(_sdf->HasElement("link"))
@@ -111,7 +124,8 @@ void BaseUpdatePlugin::Update(const common::UpdateInfo& _info)
 {
     physics::LinkPtr link = this->model_->GetLink(this->baseLinkName_);
 
-    link->SetWorldPose(this->baseLinkPose_);
+    if(link)
+        link->SetWorldPose(this->baseLinkPose_);
     // link->SetLinkWorldPose(this->baseLinkPose_);
 }
 
@@ -125,6 +139,7 @@ void BaseUpdatePlugin::Connect()
 /////////////////////////////////////////////////
 void BaseUpdatePlugin::UpdateBasePose(ConstPosePtr& _msg)
 {
+    printf("<BaseUpdatePlugin>: Update base pose\n");
     // this->baseLinkPose_.Set(_msg->position(), _msg->orientation());
     this->baseLinkPose_ = ignition::math::Pose3d(_msg->position().x(), _msg->position().y(), _msg->position().z(), 
                             _msg->orientation().w(), _msg->orientation().x(), _msg->orientation().y(), _msg->orientation().z());
