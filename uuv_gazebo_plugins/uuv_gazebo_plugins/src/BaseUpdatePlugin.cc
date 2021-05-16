@@ -24,7 +24,9 @@ namespace gazebo
 GZ_REGISTER_MODEL_PLUGIN(BaseUpdatePlugin)
 
 /////////////////////////////////////////////////
-BaseUpdatePlugin::BaseUpdatePlugin(){}
+BaseUpdatePlugin::BaseUpdatePlugin()
+{
+}
 
 /////////////////////////////////////////////////
 BaseUpdatePlugin::~BaseUpdatePlugin()
@@ -40,6 +42,8 @@ BaseUpdatePlugin::~BaseUpdatePlugin()
 void BaseUpdatePlugin::Load(physics::ModelPtr _model, 
                             sdf::ElementPtr _sdf)
 {
+    gzmsg << "<BaseUpdatePlugin>: Load model" << std::endl; 
+
     GZ_ASSERT(_model != NULL, "Invalid model pointer");
     GZ_ASSERT(_sdf != NULL, "Invalid SDF element pointer");
     
@@ -47,10 +51,7 @@ void BaseUpdatePlugin::Load(physics::ModelPtr _model,
     this->world_ = _model->GetWorld();
     
     // stop physics dynamic of world
-    if(this->world_->GetEnablePhysicsEngine()) 
-    {
-        this->world_->EnablePhysicsEngine(false);
-    }
+    this->world_->SetPhysicsEnabled(false);
 
     // set node ptr 
     std::string worldName;
@@ -81,7 +82,7 @@ void BaseUpdatePlugin::Load(physics::ModelPtr _model,
                 }
 
                 link = this->model_->GetLink(linkName);
-                if(!Link)
+                if(!link)
                 {
                     gzwarn << "Specified link [" << linkName << "] not found" << std::endl;
                     continue;
@@ -96,7 +97,7 @@ void BaseUpdatePlugin::Load(physics::ModelPtr _model,
     }
 
     // Connect the update event CB
-    this->Connect()
+    this->Connect();
 }
 
 /////////////////////////////////////////////////
@@ -108,11 +109,10 @@ void BaseUpdatePlugin::Init()
 /////////////////////////////////////////////////
 void BaseUpdatePlugin::Update(const common::UpdateInfo& _info)
 {
-    double time = _info.simTime.Double();
+    physics::LinkPtr link = this->model_->GetLink(this->baseLinkName_);
 
-    link = this->model_->GetLink(this->baseLinkName_);
-
-    link->SetLinkWorldPose(this->base_link_pose_);
+    link->SetWorldPose(this->baseLinkPose_);
+    // link->SetLinkWorldPose(this->baseLinkPose_);
 }
 
 /////////////////////////////////////////////////
@@ -123,11 +123,11 @@ void BaseUpdatePlugin::Connect()
 }
 
 /////////////////////////////////////////////////
-void BaseUpdatePlugin::UpdateBasePose(ConstPose3dPtr& _msg)
+void BaseUpdatePlugin::UpdateBasePose(ConstPosePtr& _msg)
 {
-    this->base_link_pose_.Set(ignition::math::Vector3d(_msg.x(), _msg.y(), _msg.z()), 
-                              ignition::math::Vector3d(_msg.roll(), _msg.pitch(), _msg.yaw()));
-
+    // this->baseLinkPose_.Set(_msg->position(), _msg->orientation());
+    this->baseLinkPose_ = ignition::math::Pose3d(_msg->position().x(), _msg->position().y(), _msg->position().z(), 
+                            _msg->orientation().w(), _msg->orientation().x(), _msg->orientation().y(), _msg->orientation().z());
 }
 
 }; //ns

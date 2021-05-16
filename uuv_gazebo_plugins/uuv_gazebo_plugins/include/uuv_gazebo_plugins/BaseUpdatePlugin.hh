@@ -7,8 +7,8 @@
  * Copyright (c) 2021 hust-arms
  */
 
-#ifndef __UUV_GAZEBO_PLUGINS_UNDERWATER_OBJECT_HH__
-#define __UUV_GAZEBO_PLUGINS_UNDERWATER_OBJECT_HH__
+#ifndef __UUV_GAZEBO_PLUGINS_BASE_UPDATE_HH__
+#define __UUV_GAZEBO_PLUGINS_BASE_UPDATE_HH__
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/msgs/msgs.hh>
@@ -45,7 +45,7 @@ public:
     /**
      * @brief Update event 
      */
-    virtual void Update(const gazebo::ommon::UpdateInfo& _info);
+    virtual void Update(const gazebo::common::UpdateInfo& _info);
 
 protected:
 
@@ -57,9 +57,9 @@ protected:
     /**
      * @brief Update position of UUV base 
      */
-    void UpdateBasePose(ConstPose3dPtr& _msg);
+    void UpdateBasePose(ConstPosePtr& _msg);
 
-    ignition::math::Pose3d base_link_pose_;
+    ignition::math::Pose3d baseLinkPose_;
 
     gazebo::event::ConnectionPtr updateConnection_;
 
@@ -72,6 +72,8 @@ protected:
     std::string baseLinkName_;
 
     gazebo::transport::SubscriberPtr poseSub_;
+
+    // ignition::math::Pose3d baseLinkPose_;
 
 }; // BaseUpdatePlugin
 }; // ns
