@@ -25,10 +25,12 @@ catkin_package(
  LIBRARIES
   uuv_fin_ros_plugin
   uuv_armsauv_ros_plugin
+  uuv_armsauv_fin_ros_plugin
   uuv_thruster_ros_plugin
   uuv_underwater_object_ros_plugin
   uuv_joint_state_publisher
   uuv_accelerations_test_plugin
+  base_update_ros_plugin
  CATKIN_DEPENDS uuv_gazebo_plugins
   sensor_msgs
   geometry_msgs
@@ -52,6 +54,11 @@ add_library(uuv_armsauv_ros_plugin src/ArmsauvROSPlugin.cc)
 target_link_libraries(uuv_armsauv_ros_plugin ${catkin_LIBRARIES})
 add_dependencies(uuv_armsauv_ros_plugin ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST uuv_armsauv_ros_plugin)
+
+add_library(uuv_armsauv_fin_ros_plugin src/ArmsauvFinROSPlugin.cc)
+target_link_libraries(uuv_armsauv_fin_ros_plugin ${catkin_LIBRARIES})
+add_dependencies(uuv_armsauv_fin_ros_plugin ${catkin_EXPORTED_TARGETS})
+list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST uuv_armsauv_fin_ros_plugin)
 
 add_library(uuv_fin_ros_plugin src/FinROSPlugin.cc)
 target_link_libraries(uuv_fin_ros_plugin ${catkin_LIBRARIES})
@@ -83,6 +90,10 @@ list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST linear_battery_ros_plugin)
 add_library(custom_battery_consumer_ros_plugin src/CustomBatteryConsumerROSPlugin.cc)
 target_link_libraries(custom_battery_consumer_ros_plugin ${catkin_LIBRARIES})
 list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST custom_battery_consumer_ros_plugin)
+
+add_library(base_update_ros_plugin src/BaseUpdateROSPlugin.cc)
+target_link_libraries(base_update_ros_plugin ${catkin_LIBRARIES})
+list(APPEND UUV_GAZEBO_ROS_PLUGINS_LIST base_update_ros_plugin)
 
 install(TARGETS ${UUV_GAZEBO_ROS_PLUGINS_LIST}
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

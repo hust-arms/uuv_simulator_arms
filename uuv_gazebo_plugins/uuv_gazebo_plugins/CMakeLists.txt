@@ -43,9 +43,11 @@ catkin_package(
   LIBRARIES
     uuv_underwater_object_plugin
     uuv_armsauv_plugin
+    uuv_armsauv_fin_plugin
     uuv_thruster_plugin
     uuv_fin_plugin
     uuv_dynamics
+    base_update_plugin
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include
@@ -88,6 +90,19 @@ add_dependencies(uuv_fin_plugin
   ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_fin_plugin)
 
+add_library(uuv_armsauv_fin_plugin
+    src/ArmsauvFinPlugin.cc
+)
+target_link_libraries(uuv_armsauv_fin_plugin
+    uuv_dynamics
+    uuv_gazebo_plugins_msgs
+    ${catkin_LIBRARIES}
+    ${Boost_LIBRARIES})
+add_dependencies(uuv_armsauv_fin_plugin
+  uuv_gazebo_plugins_msgs
+  ${catkin_EXPORTED_TARGETS})
+list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_armsauv_fin_plugin)
+
 add_library(uuv_armsauv_plugin
     src/ArmsauvPlugin.cc
     src/ArmsauvHydrodynamicModel.cc
@@ -123,6 +138,17 @@ add_dependencies(uuv_thruster_plugin
     uuv_gazebo_plugins_msgs
     ${catkin_EXPORTED_TARGETS})
 list(APPEND UUV_GAZEBO_PLUGINS_LIST uuv_thruster_plugin)
+
+add_library(base_update_plugin
+    src/BaseUpdatePlugin.cc
+)
+target_link_libraries(base_update_plugin
+    ${catkin_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+add_dependencies(base_update_plugin
+    ${catkin_EXPORTED_TARGETS})
+list(APPEND UUV_GAZEBO_PLUGINS_LIST base_update_plugin)
 
 add_library(umbilical_plugin
   src/UmbilicalModel.cc
