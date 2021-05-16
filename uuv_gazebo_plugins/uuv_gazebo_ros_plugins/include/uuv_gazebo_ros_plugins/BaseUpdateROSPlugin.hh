@@ -23,6 +23,7 @@
 #include <uuv_gazebo_ros_plugins_msgs/SetFloat.h>
 #include <uuv_gazebo_ros_plugins_msgs/GetFloat.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Pose.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -44,8 +45,8 @@ public:
     /**
      * @brief Model load
      */
-✗   virtual void Load(gazebo::physics::ModelPtr _model,
-✗                     sdf::ElementPtr _sdf);
+    virtual void Load(gazebo::physics::ModelPtr _model,
+                      sdf::ElementPtr _sdf);
     
     /**
      * @brief Initialization
@@ -60,13 +61,13 @@ public:
     /**
      * @brief Update event
      */
-✗   virtual void Update(const gazebo::common::UpdateInfo& _info);
+    virtual void Update(const gazebo::common::UpdateInfo& _info);
 
 protected:
     /**
      * @brief Update position of UUV base 
      */                                                                                        
-✗   void UpdateBasePose(const geometry_msgs::Pose::ConstPtr& _msg);
+    void UpdateBasePose(const geometry_msgs::Pose::ConstPtr& _msg);
 
 private:
     boost::scoped_ptr<ros::NodeHandle> rosNode_;
@@ -75,7 +76,7 @@ private:
 
     geometry_msgs::TransformStamped nedTransform_;
 
-    tf2_ros::TransformStampedBroadcaster tfBroadcaster_;
+    tf2_ros::TransformBroadcaster tfBroadcaster_;
 
 }; // BaseUpdateROSPlugin
 }; // ns

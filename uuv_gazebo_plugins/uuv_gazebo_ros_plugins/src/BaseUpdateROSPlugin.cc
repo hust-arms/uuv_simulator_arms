@@ -9,6 +9,7 @@
 
 #include <uuv_gazebo_ros_plugins/BaseUpdateROSPlugin.hh>
 
+#include <tf/tf.h>
 #include <gazebo/physics/Base.hh>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/World.hh>
@@ -17,7 +18,9 @@
 namespace uuv_simulator_ros
 {
 /////////////////////////////////////////////////
-BaseUpdateROSPlugin::BaseUpdateROSPlugin(){}
+BaseUpdateROSPlugin::BaseUpdateROSPlugin()
+{
+}
 
 /////////////////////////////////////////////////
 BaseUpdateROSPlugin::~BaseUpdateROSPlugin()
@@ -26,7 +29,7 @@ BaseUpdateROSPlugin::~BaseUpdateROSPlugin()
 }
 
 /////////////////////////////////////////////////
-void BaseUpdateROSPlugin::Load(gazebo::physics::NodePtr _parent, 
+void BaseUpdateROSPlugin::Load(gazebo::physics::ModelPtr _parent, 
                                sdf::ElementPtr _sdf)
 {
     if(!ros::isInitialized())
@@ -36,6 +39,8 @@ void BaseUpdateROSPlugin::Load(gazebo::physics::NodePtr _parent,
               << "  gazebo -s libgazebo_ros_api_plugin.so\n";
         return;
     }
+
+    gzmsg << "<BaseUpdateROSPlugin>: Load plugin\n";
 
     this->rosNode_.reset(new ros::NodeHandle(""));
 
@@ -52,11 +57,11 @@ void BaseUpdateROSPlugin::Load(gazebo::physics::NodePtr _parent,
     }
 
     // subscribe pose
-    this->posesub_ = this->rosNode_->subscribe<geometry_msgs::Pose>(
-        _parent->GetName() + "/next_pose", 10, boost::bind(&BaseUpdateROSPlugin::UpdateBasePose, this, _1));
+    this->baseLinkStatesSub_ = this->rosNode_->subscribe<geometry_msgs::Pose>(
+        _parent->GetName() + "/base_link_states", 10, boost::bind(&BaseUpdateROSPlugin::UpdateBasePose, this, _1));
 
-    this->nedTransform_.header.frame_id = this->model->GetName() + "/base_link";
-    this->nedTransform_.child_frame_id = this->model->GetName() + "/base_linK_ned";
+    this->nedTransform_.header.frame_id = this->model_->GetName() + "/base_link";
+    this->nedTransform_.child_frame_id = this->model_->GetName() + "/base_linK_ned";
     this->nedTransform_.transform.translation.x = 0;
     this->nedTransform_.transform.translation.y = 0;
     this->nedTransform_.transform.translation.z = 0;
@@ -84,17 +89,20 @@ void BaseUpdateROSPlugin::Update(const gazebo::common::UpdateInfo& _info)
 {
     BaseUpdatePlugin::Update(_info);
     this->nedTransform_.header.stamp = ros::Time::now();
-    this->tfBroadCaster_.sendTramsform(this->nedTransform_);
+    this->tfBroadcaster_.sendTransform(this->nedTransform_);
 }
 
 /////////////////////////////////////////////////A
 void BaseUpdateROSPlugin::UpdateBasePose(const geometry_msgs::Pose::ConstPtr& _msg)
 {
-    tf::Quaternion q(_msg.quaternion.x, _msg.quaternion.y, _msg.quaternion.z, _msg.quaternion.w);
+    double x, y, z;
+    x = _msg->position.x; y = _msg->position.y; z = _msg->position.z;
+    tf::Quaternion q(_msg->orientation.x, _msg->orientation.y, _msg->orientation.z, _msg->orientation.w);
     tf::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    this->baseLinkPose_.Set(_msg.position.x, _msg.position.y, _msg.position.z, roll, pitch, yaw);
+    printf("<BaseUpdateROSPlugin>: x: %f, y: %f, z: %f, roll: %f, pitch: %f, yaw: %f\n", x, y, z, roll, pitch, yaw);
+    this->baseLinkPose_.Set(x, y, z, roll, pitch, yaw);
 }
 
 }; // ns
